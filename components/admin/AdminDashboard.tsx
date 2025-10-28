@@ -8,6 +8,8 @@ import { Product } from '../../types';
 import ProductForm from './ProductForm';
 import { useDebounce } from '../../hooks/useDebounce';
 import { Theme } from '../../pages/AdminPage';
+import { menuData } from '../../data/menuData';
+import { supabase } from '../../supabase/client';
 
 const placeholderImage = 'https://via.placeholder.com/150';
 
@@ -27,6 +29,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ theme, onToggleTheme })
   const [searchQuery, setSearchQuery] = useState('');
   const [sort, setSort] = useState({ column: 'created_at', order: 'desc' });
   const [togglingVisibility, setTogglingVisibility] = useState<string | null>(null);
+  const [isSeeding, setIsSeeding] = useState(false);
   
   const debouncedSearchQuery = useDebounce(searchQuery, 300);
 
@@ -68,6 +71,40 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ theme, onToggleTheme })
       order: prevSort.column === column && prevSort.order === 'asc' ? 'desc' : 'asc'
     }));
   };
+  
+  const handleSeedDatabase = async () => {
+    if (!window.confirm(`Are you sure you want to add ${menuData.length} products to the database? This should only be done once.`)) {
+      return;
+    }
+
+    setIsSeeding(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("You must be logged in to seed the database.");
+
+      // Remove the hardcoded 'id' and add the 'owner_id' to each product
+      const productsToSeed = menuData.map(({ id, ...rest }) => ({
+        ...rest,
+        owner_id: user.id,
+      }));
+
+      const { error } = await supabase.from('products').insert(productsToSeed);
+
+      if (error) {
+        throw error;
+      }
+      
+      alert(`Successfully added ${productsToSeed.length} products to the database!`);
+      fetchProducts(); // Refresh the product list
+
+    } catch (error: any) {
+      console.error("Database seeding failed:", error);
+      alert(`Database seeding failed: ${error.message}`);
+    } finally {
+      setIsSeeding(false);
+    }
+  };
+
 
   const totalPages = Math.ceil(totalAdminProducts / 10);
 
@@ -111,7 +148,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ theme, onToggleTheme })
           </div>
         </div>
 
-        <div className="mb-8 p-6 neu-outset flex justify-between items-center">
+        <div className="mb-8 p-6 neu-outset flex flex-wrap gap-4 justify-between items-center">
             <input 
                 type="text"
                 placeholder="Search by name (es)..."
@@ -119,12 +156,21 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ theme, onToggleTheme })
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="neu-inset px-4 py-2 w-full max-w-xs border-none focus:outline-none"
             />
-          <button
-            onClick={handleAddNew}
-            className="neu-button px-4 py-2 text-sm font-medium"
-          >
-            <i className="fas fa-plus mr-2"></i>Add New Product
-          </button>
+            <div className="flex gap-4">
+               <button
+                  onClick={handleSeedDatabase}
+                  disabled={isSeeding}
+                  className="neu-button px-4 py-2 text-sm font-medium bg-yellow-400/20"
+                >
+                  {isSeeding ? <><i className="fas fa-spinner fa-spin mr-2"></i>Cargando...</> : <><i className="fas fa-database mr-2"></i>Cargar Menú Inicial</>}
+                </button>
+                <button
+                  onClick={handleAddNew}
+                  className="neu-button px-4 py-2 text-sm font-medium"
+                >
+                  <i className="fas fa-plus mr-2"></i>Add New Product
+                </button>
+            </div>
         </div>
 
         <div className="neu-outset p-2 relative">
