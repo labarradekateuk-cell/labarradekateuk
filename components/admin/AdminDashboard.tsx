@@ -93,7 +93,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ theme, onToggleTheme })
               href="/#"
               className="neu-button px-5 py-2 text-sm font-medium"
             >
-              Volver al Sitio
+              Volver a la página de inicio
             </a>
             <button
               onClick={onToggleTheme}

@@ -66,6 +66,11 @@ const AdminLogin: React.FC = () => {
             </button>
           </div>
         </form>
+        <div className="mt-6 text-center">
+            <a href="/#" className="neu-button inline-block px-5 py-2 text-sm font-medium">
+                Volver a la página de inicio
+            </a>
+        </div>
       </div>
     </div>
   );
