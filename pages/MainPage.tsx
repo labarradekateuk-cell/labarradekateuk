@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import Header from '../components/Header';
 import Hero from '../components/Hero';
+import About from '../components/About';
 import Menu from '../components/Menu';
 import Footer from '../components/Footer';
 import ShoppingCart from '../components/ShoppingCart';
@@ -30,6 +31,7 @@ const MainPage: React.FC = () => {
           />
           <main className="container mx-auto px-4 pt-24 pb-12">
             <Hero />
+            <About />
             <Menu searchQuery={searchQuery} selectedCategory={selectedCategory} />
           </main>
           <Footer />

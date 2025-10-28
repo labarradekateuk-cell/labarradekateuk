@@ -1,9 +1,9 @@
-
 import React, { useState, useEffect } from 'react';
 import { Product } from '../../types';
 import { useProducts } from '../../context/ProductContext';
 import { useLanguage } from '../../context/LanguageContext';
 import type { Language } from '../../data/translations';
+import { supabase } from '../../supabase/client';
 
 interface ProductFormProps {
   productToEdit: Product | null;
@@ -14,8 +14,10 @@ const ProductForm: React.FC<ProductFormProps> = ({ productToEdit, onClose }) => 
   const { addProduct, updateProduct } = useProducts();
   const { languages } = useLanguage();
   const [activeTab, setActiveTab] = useState<Language>(languages[0].code);
-  
-  const initialProductState = {
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+
+  const initialProductState: Omit<Product, 'id' | 'created_at'> = {
     name: Object.fromEntries(languages.map(l => [l.code, ''])),
     description: Object.fromEntries(languages.map(l => [l.code, ''])),
     price: 0,
@@ -24,11 +26,10 @@ const ProductForm: React.FC<ProductFormProps> = ({ productToEdit, onClose }) => 
     tags: []
   };
 
-  const [product, setProduct] = useState<Omit<Product, 'id'>>(initialProductState);
+  const [product, setProduct] = useState(initialProductState);
 
   useEffect(() => {
     if (productToEdit) {
-      // Ensure all language keys exist to prevent uncontrolled component warnings
       const completeName = { ...initialProductState.name, ...productToEdit.name };
       const completeDescription = { ...initialProductState.description, ...productToEdit.description };
       
@@ -59,8 +60,14 @@ const ProductForm: React.FC<ProductFormProps> = ({ productToEdit, onClose }) => 
         }));
     }
   };
+  
+  const handleImageFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      if (e.target.files && e.target.files[0]) {
+          setImageFile(e.target.files[0]);
+      }
+  }
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUrlsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       const { value } = e.target;
       setProduct(prev => ({ ...prev, images: value.split(',').map(img => img.trim()).filter(Boolean) }));
   }
@@ -70,13 +77,38 @@ const ProductForm: React.FC<ProductFormProps> = ({ productToEdit, onClose }) => 
       setProduct(prev => ({...prev, tags: value.split(',').map(tag => tag.trim().toLowerCase()).filter(Boolean) }));
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (productToEdit) {
-      updateProduct({ ...product, id: productToEdit.id });
-    } else {
-      addProduct(product);
+    setIsUploading(true);
+
+    let productData = { ...product };
+
+    if (imageFile) {
+        const fileName = `${Date.now()}_${imageFile.name}`;
+        const { error: uploadError } = await supabase.storage
+            .from('product-images')
+            .upload(fileName, imageFile);
+
+        if (uploadError) {
+            console.error('Error uploading image:', uploadError);
+            alert('Failed to upload image.');
+            setIsUploading(false);
+            return;
+        }
+
+        const { data: { publicUrl } } = supabase.storage
+            .from('product-images')
+            .getPublicUrl(fileName);
+        
+        productData.images = [...productData.images, publicUrl];
     }
+    
+    if (productToEdit) {
+      await updateProduct({ ...productData, id: productToEdit.id });
+    } else {
+      await addProduct(productData);
+    }
+    setIsUploading(false);
     onClose();
   };
 
@@ -90,7 +122,6 @@ const ProductForm: React.FC<ProductFormProps> = ({ productToEdit, onClose }) => 
 
         <form onSubmit={handleSubmit} className="overflow-y-auto">
             <div className="p-6 space-y-4">
-                {/* Language Tabs */}
                 <div className="border-b border-gray-200">
                     <nav className="-mb-px flex space-x-4" aria-label="Tabs">
                         {languages.map(lang => (
@@ -110,7 +141,6 @@ const ProductForm: React.FC<ProductFormProps> = ({ productToEdit, onClose }) => 
                     </nav>
                 </div>
 
-                {/* Tab Content */}
                 {languages.map(lang => (
                     <div key={lang.code} className={activeTab === lang.code ? 'block' : 'hidden'}>
                         <div className="space-y-4">
@@ -141,7 +171,6 @@ const ProductForm: React.FC<ProductFormProps> = ({ productToEdit, onClose }) => 
                     </div>
                 ))}
             
-                {/* General Fields */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t">
                     <div>
                         <label htmlFor="price" className="block text-sm font-medium text-gray-700">Price (£)</label>
@@ -171,18 +200,29 @@ const ProductForm: React.FC<ProductFormProps> = ({ productToEdit, onClose }) => 
                     </div>
                 </div>
                  <div>
+                    <label htmlFor="image-upload" className="block text-sm font-medium text-gray-700">Upload New Image</label>
+                    <input
+                        type="file"
+                        id="image-upload"
+                        name="image-upload"
+                        accept="image/*"
+                        onChange={handleImageFileChange}
+                        className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-600 hover:file:bg-indigo-100"
+                    />
+                 </div>
+                 <div>
                     <label htmlFor="images" className="block text-sm font-medium text-gray-700">Image URLs (comma-separated)</label>
                     <input
                         type="text"
                         name="images"
                         id="images"
                         value={product.images.join(', ')}
-                        onChange={handleImageChange}
+                        onChange={handleImageUrlsChange}
                         className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                     />
                 </div>
                 <div>
-                    <label htmlFor="tags" className="block text-sm font-medium text-gray-700">Tags (comma-separated)</label>
+                    <label htmlFor="tags" className="block text-sm font-medium text-gray-700">Tags (e.g., recommended, special)</label>
                     <input
                         type="text"
                         name="tags"
@@ -197,9 +237,10 @@ const ProductForm: React.FC<ProductFormProps> = ({ productToEdit, onClose }) => 
             <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
                 <button
                 type="submit"
-                className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm"
+                disabled={isUploading}
+                className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm disabled:bg-indigo-400"
                 >
-                {productToEdit ? 'Save Changes' : 'Create Product'}
+                {isUploading ? 'Saving...' : (productToEdit ? 'Save Changes' : 'Create Product')}
                 </button>
                 <button
                 type="button"
@@ -210,7 +251,6 @@ const ProductForm: React.FC<ProductFormProps> = ({ productToEdit, onClose }) => 
                 </button>
             </div>
         </form>
-
       </div>
     </div>
   );
