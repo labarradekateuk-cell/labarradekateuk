@@ -1,6 +1,7 @@
 
 
 
+
 import React, { useState } from 'react';
 import { Product } from '../types';
 import { useLanguage } from '../context/LanguageContext';
@@ -12,6 +13,20 @@ interface ProductDetailModalProps {
 }
 
 const placeholderImage = 'https://via.placeholder.com/800x600.png?text=No+Image';
+
+const formatCurrency = (price: number, currencyCode: string = 'GBP') => {
+  try {
+    return new Intl.NumberFormat('en-GB', {
+      style: 'currency',
+      currency: currencyCode,
+    }).format(price);
+  } catch (error) {
+    return new Intl.NumberFormat('en-GB', {
+      style: 'currency',
+      currency: 'GBP',
+    }).format(price);
+  }
+};
 
 const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product, onClose }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -87,7 +102,7 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product, onClos
                 <p className="text-gray-600 leading-relaxed mb-4">{product.description[language] || product.description['en']}</p>
             </div>
             <div className="mt-auto">
-                <p className="text-3xl font-bold text-green-600 mb-4">£{(product.price * quantity).toFixed(2)}</p>
+                <p className="text-3xl font-bold text-green-600 mb-4">{formatCurrency(product.price * quantity, product.currency)}</p>
                 <div className="flex items-center gap-4">
                     <div className="flex items-center gap-1 p-1 bg-white/30 border border-white/40 rounded-xl shadow-sm">
                         <button onClick={() => handleQuantityChange(-1)} className="w-10 h-10 flex items-center justify-center font-semibold text-lg text-gray-700 rounded-lg transition-all duration-200 hover:bg-white/40 active:bg-white/20">-</button>

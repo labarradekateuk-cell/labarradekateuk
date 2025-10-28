@@ -14,6 +14,30 @@
       body {
         font-family: 'Montserrat', sans-serif;
         background-color: #fdf6e3; /* Habano background color */
+        transition: background-color 0.3s ease;
+      }
+
+      /* Neumorphism Admin Styles */
+      :root, [data-theme="light"] {
+        --admin-bg-color: #e0e0e0;
+        --shadow-light: #ffffff;
+        --shadow-dark: #bebebe;
+        --text-color: #5b6271;
+        --inset-bg-color: #e0e0e0;
+        --table-row-odd-bg: rgba(0, 0, 0, 0.05);
+      }
+
+      [data-theme="dark"] {
+        --admin-bg-color: #333742;
+        --shadow-light: #404552;
+        --shadow-dark: #262932;
+        --text-color: #c1c8d6;
+        --inset-bg-color: #333742;
+        --table-row-odd-bg: rgba(255, 255, 255, 0.05);
+      }
+
+      body.admin-bg {
+        background-color: var(--admin-bg-color);
       }
       .font-cursive {
         font-family: 'Pacifico', cursive;
@@ -33,6 +57,44 @@
       }
       .neumorphic-button:active {
         box-shadow: inset 6px 6px 12px #e0dac9, inset -6px -6px 12px #ffffff;
+      }
+
+      .neu-outset {
+        background: var(--admin-bg-color);
+        border-radius: 20px;
+        box-shadow: 8px 8px 16px var(--shadow-dark), -8px -8px 16px var(--shadow-light);
+        transition: background-color 0.3s ease, box-shadow 0.3s ease;
+      }
+      .neu-inset {
+        background: var(--inset-bg-color);
+        border-radius: 12px;
+        box-shadow: inset 5px 5px 10px var(--shadow-dark), inset -5px -5px 10px var(--shadow-light);
+        transition: background-color 0.3s ease, box-shadow 0.3s ease;
+      }
+      .neu-button {
+        color: var(--text-color);
+        background: var(--admin-bg-color);
+        border: none;
+        border-radius: 10px;
+        box-shadow: 5px 5px 10px var(--shadow-dark), -5px -5px 10px var(--shadow-light);
+        transition: all 0.1s ease-in-out;
+      }
+      .neu-button:hover:not(:disabled) {
+        box-shadow: 6px 6px 12px var(--shadow-dark), -6px -6px 12px var(--shadow-light);
+      }
+      .neu-button:active:not(:disabled), .neu-button.active {
+        box-shadow: inset 5px 5px 10px var(--shadow-dark), inset -5px -5px 10px var(--shadow-light);
+      }
+      .neu-button:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+      .neu-text-color {
+          color: var(--text-color);
+          transition: color 0.3s ease;
+      }
+      tbody.neu-text-color tr:nth-of-type(odd) {
+        background-color: var(--table-row-odd-bg);
       }
     </style>
   <script type="importmap">

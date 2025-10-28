@@ -33,13 +33,27 @@ const filterCategories = [
     { key: 'drinks', tag: 'drink' },
 ];
 
+const formatCurrency = (price: number, currencyCode: string = 'GBP') => {
+  try {
+    return new Intl.NumberFormat('en-GB', {
+      style: 'currency',
+      currency: currencyCode,
+    }).format(price);
+  } catch (error) {
+    return new Intl.NumberFormat('en-GB', {
+      style: 'currency',
+      currency: 'GBP',
+    }).format(price);
+  }
+};
+
 interface MenuProps {
   searchQuery: string;
   selectedCategory: string | null;
 }
 
 const Menu: React.FC<MenuProps> = ({ searchQuery, selectedCategory }) => {
-  const { products } = useProducts();
+  const { products, loading, error } = useProducts();
   const { addToCart } = useCart();
   const { t, language } = useLanguage();
   const [detailProduct, setDetailProduct] = useState<Product | null>(null);
@@ -52,7 +66,7 @@ const Menu: React.FC<MenuProps> = ({ searchQuery, selectedCategory }) => {
   };
   
   const filteredProducts = useMemo(() => {
-    let result = products.filter(p => p.isVisible);
+    let result = products; // Already filtered for is_visible in context
 
     if (selectedCategory) {
         const categoryDef = filterCategories.find(c => c.key === selectedCategory);
@@ -139,7 +153,7 @@ const Menu: React.FC<MenuProps> = ({ searchQuery, selectedCategory }) => {
                 {renderTags()}
             </div>
             <div className="flex-shrink-0 flex sm:flex-col items-center justify-between sm:justify-center w-full sm:w-auto mt-4 sm:mt-0 sm:ml-4">
-                 <p className="text-lg font-bold text-green-600 mb-2">£{product.price.toFixed(2)}</p>
+                 <p className="text-lg font-bold text-green-600 mb-2">{formatCurrency(product.price, product.currency)}</p>
                  <button
                     onClick={handleAddToCart}
                     className="w-full px-4 py-2 text-sm font-semibold text-white bg-blue-500 rounded-lg shadow-md hover:bg-blue-600 transition-all duration-200"
@@ -169,7 +183,7 @@ const Menu: React.FC<MenuProps> = ({ searchQuery, selectedCategory }) => {
                     </span>
                 ))}
             </div>
-            <p className="text-xl font-bold text-green-600 mb-4">£{product.price.toFixed(2)}</p>
+            <p className="text-xl font-bold text-green-600 mb-4">{formatCurrency(product.price, product.currency)}</p>
             <button
                 onClick={handleAddToCart}
                 className="w-full px-4 py-2 text-sm font-semibold text-white bg-blue-500 rounded-lg shadow-md hover:bg-blue-600 transition-all duration-200"
@@ -180,14 +194,50 @@ const Menu: React.FC<MenuProps> = ({ searchQuery, selectedCategory }) => {
         </div>
     );
   }
+  
+  const renderContent = () => {
+    if (loading) {
+      return (
+        <div className="text-center py-16">
+          <i className="fas fa-spinner fa-spin text-4xl text-gray-500"></i>
+        </div>
+      );
+    }
+    
+    if (error) {
+      return (
+        <div className="text-center py-16">
+          <div className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 rounded-xl relative max-w-lg mx-auto shadow-md" role="alert">
+            <p className="font-bold">Error Loading Menu</p>
+            <p className="text-sm">{error}</p>
+            <p className="text-xs mt-2">Please check your connection and database policies (RLS).</p>
+          </div>
+        </div>
+      );
+    }
+    
+    if (filteredProducts.length > 0) {
+      return (
+        <div className={layoutClasses[layout]}>
+          {filteredProducts.map((product) => (
+            <ProductCard key={product.id} product={product} />
+          ))}
+        </div>
+      );
+    }
+    
+    return (
+      <div className="text-center py-16 px-4">
+        <p className="text-gray-600 text-lg bg-white/20 backdrop-blur-sm p-6 rounded-xl shadow-md inline-block">{t('menu.no_results')}</p>
+      </div>
+    );
+  }
 
   return (
     <>
       <section id="menu" className="py-16">
         <h2 className="text-3xl md:text-4xl font-bold text-center text-gray-800 mb-6 font-cursive">{t('menu.title')}</h2>
         
-        {/* Category filters removed from here */}
-
         {tagFilter && (
             <div className="text-center mb-8">
                 <span className="inline-flex items-center gap-2 bg-blue-100 text-blue-800 text-sm font-medium px-3 py-1 rounded-full shadow-sm">
@@ -204,17 +254,7 @@ const Menu: React.FC<MenuProps> = ({ searchQuery, selectedCategory }) => {
             <LayoutButton view="list" icon="fa-list" />
         </div>
 
-        {filteredProducts.length > 0 ? (
-            <div className={layoutClasses[layout]}>
-                {filteredProducts.map((product) => (
-                    <ProductCard key={product.id} product={product} />
-                ))}
-            </div>
-        ) : (
-            <div className="text-center py-16 px-4">
-                <p className="text-gray-600 text-lg bg-white/20 backdrop-blur-sm p-6 rounded-xl shadow-md inline-block">{t('menu.no_results')}</p>
-            </div>
-        )}
+        {renderContent()}
 
       </section>
       {detailProduct && (

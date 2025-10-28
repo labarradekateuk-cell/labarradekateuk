@@ -4,46 +4,92 @@ import { supabase } from '../supabase/client';
 
 interface ProductContextType {
   products: Product[];
-  addProduct: (product: Omit<Product, 'id' | 'created_at'>) => Promise<void>;
-  updateProduct: (product: Product) => Promise<void>;
-  deleteProduct: (productId: number) => Promise<void>;
-  setProducts: (products: Product[]) => void;
+  adminProducts: Product[];
+  totalAdminProducts: number;
+  loading: boolean;
+  error: string | null;
+  addProduct: (product: Omit<Product, 'id' | 'created_at' | 'owner_id' | 'updated_at'>) => Promise<any>;
+  updateProduct: (product: Product) => Promise<any>;
+  deleteProduct: (productId: string) => Promise<any>;
+  getAdminProducts: (page: number, searchQuery: string, sort: { column: string; order: string }) => Promise<void>;
 }
 
 const ProductContext = createContext<ProductContextType | undefined>(undefined);
 
+const PRODUCTS_PER_PAGE = 10;
+
 export const ProductProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [products, setProducts] = useState<Product[]>([]);
+  const [adminProducts, setAdminProducts] = useState<Product[]>([]);
+  const [totalAdminProducts, setTotalAdminProducts] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchProducts = async () => {
+      setLoading(true);
+      setError(null);
       const { data, error } = await supabase
         .from('products')
         .select('*')
+        .eq('is_visible', true)
         .order('id', { ascending: true });
         
       if (error) {
-        console.error("Could not load products from Supabase:", error.message);
+        console.error("Could not load products from Supabase:", error);
+        setError(error.message);
       } else if (data) {
         setProducts(data as Product[]);
       }
+      setLoading(false);
     };
     fetchProducts();
   }, []);
 
-  const addProduct = async (productData: Omit<Product, 'id' | 'created_at'>) => {
+  const getAdminProducts = async (page: number, searchQuery: string, sort: { column: string; order: string }) => {
+    setLoading(true);
+    let query = supabase
+      .from('products')
+      .select('*', { count: 'exact' });
+
+    if (searchQuery) {
+      query = query.ilike('name->>es', `%${searchQuery}%`);
+    }
+
+    const from = (page - 1) * PRODUCTS_PER_PAGE;
+    const to = from + PRODUCTS_PER_PAGE - 1;
+    query = query.range(from, to);
+
+    if (sort.column) {
+      query = query.order(sort.column, { ascending: sort.order === 'asc' });
+    }
+
+    const { data, error, count } = await query;
+    
+    if (error) {
+      console.error("Could not load admin products from Supabase:", error);
+      setError(error.message);
+    } else if (data) {
+      setAdminProducts(data as Product[]);
+      setTotalAdminProducts(count || 0);
+    }
+    setLoading(false);
+  };
+
+  const addProduct = async (productData: Omit<Product, 'id' | 'created_at' | 'owner_id' | 'updated_at'>) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) throw new Error("User not authenticated");
+
     const { data, error } = await supabase
       .from('products')
-      .insert([productData])
+      .insert([{ ...productData, owner_id: user.id }])
       .select();
 
     if (error) {
-      console.error('Error adding product:', error.message);
-      return;
+      console.error('Error adding product:', error);
+      return { error };
     }
-    if (data) {
-      setProducts(prev => [...prev, ...data as Product[]]);
-    }
+    return { data };
   };
 
   const updateProduct = async (updatedProduct: Product) => {
@@ -55,29 +101,35 @@ export const ProductProvider: React.FC<{ children: ReactNode }> = ({ children })
       .select();
     
     if (error) {
-        console.error('Error updating product:', error.message);
-        return;
+        console.error('Error updating product:', error);
     }
-    if (data) {
-        setProducts(prev => prev.map(p => p.id === id ? data[0] as Product : p));
-    }
+    return { data, error };
   };
 
-  const deleteProduct = async (productId: number) => {
+  const deleteProduct = async (productId: string) => {
     const { error } = await supabase
       .from('products')
       .delete()
       .eq('id', productId);
     
     if (error) {
-        console.error('Error deleting product', error.message);
-        return;
+        console.error('Error deleting product', error);
     }
-    setProducts(prev => prev.filter(p => p.id !== productId));
+    return { error };
   };
 
   return (
-    <ProductContext.Provider value={{ products, addProduct, updateProduct, deleteProduct, setProducts }}>
+    <ProductContext.Provider value={{ 
+      products, 
+      adminProducts,
+      totalAdminProducts,
+      loading,
+      error,
+      getAdminProducts,
+      addProduct, 
+      updateProduct, 
+      deleteProduct,
+    }}>
       {children}
     </ProductContext.Provider>
   );
