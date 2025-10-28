@@ -23,7 +23,7 @@ const AdminLogin: React.FC = () => {
     <div className="flex items-center justify-center min-h-screen p-4">
       <div className="w-full max-w-md p-8 space-y-8 neu-outset">
         <div>
-           <img src="https://lh3.googleusercontent.com/pw/AP1GczNAo9UaVfrx17NH3XRuch8bUAfwtq6TjVDWQJsGcNlSlQbdRj5QqqhjOCUOBeCCThcSFyiuHRmWgrvi3XEEkf3Yy1-5UnJAtxA4OZJREU00Pzq95BbV1f6IDl6fBEG-LiG80J-fTH35XM1d09zgFSJU=w559-h419-s-no-gm?authuser=0" alt="Logo" className="w-32 mx-auto" />
+           <img src="https://lh3.googleusercontent.com/pw/AP1GczNAo9UaVfrx17NH3XRuch8bUAfwtq6TjVDWQJsGcNlSlQbdRj5QqqhjOCUOBeCCThcSFyuHRmWgrvi3XEEkf3Yy1-5UnJAtxA4OZJREU00Pzq95BbV1f6IDl6fBEG-LiG80J-fTH35XM1d09zgFSJU=w559-h419-s-no-gm?authuser=0" alt="Logo" className="w-40 mx-auto" />
           <h2 className="mt-6 text-center text-3xl font-bold neu-text-color">
             Admin Panel Login
           </h2>
@@ -36,7 +36,7 @@ const AdminLogin: React.FC = () => {
               type="email"
               autoComplete="email"
               required
-              className="neu-inset w-full px-4 py-3 border-none focus:outline-none focus:ring-2 focus:ring-opacity-50 focus:ring-gray-400 sm:text-sm text-gray-700 placeholder-gray-500"
+              className="neu-inset w-full px-4 py-3 border-none focus:outline-none focus:ring-2 focus:ring-opacity-50 focus:ring-gray-400 sm:text-sm"
               placeholder="Email address"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -47,7 +47,7 @@ const AdminLogin: React.FC = () => {
               type="password"
               autoComplete="current-password"
               required
-              className="neu-inset w-full px-4 py-3 border-none focus:outline-none focus:ring-2 focus:ring-opacity-50 focus:ring-gray-400 sm:text-sm text-gray-700 placeholder-gray-500"
+              className="neu-inset w-full px-4 py-3 border-none focus:outline-none focus:ring-2 focus:ring-opacity-50 focus:ring-gray-400 sm:text-sm"
               placeholder="Password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}

@@ -84,8 +84,17 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ theme, onToggleTheme })
     <div className="min-h-screen p-4 sm:p-6 lg:p-8">
       <div className="max-w-7xl mx-auto">
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold neu-text-color">Product Management</h1>
+          <div className="flex items-center gap-4">
+            <img src="https://lh3.googleusercontent.com/pw/AP1GczNAo9UaVfrx17NH3XRuch8bUAfwtq6TjVDWQJsGcNlSlQbdRj5QqqhjOCUOBeCCThcSFyuHRmWgrvi3XEEkf3Yy1-5UnJAtxA4OZJREU00Pzq95BbV1f6IDl6fBEG-LiG80J-fTH35XM1d09zgFSJU=w559-h419-s-no-gm?authuser=0" alt="Logo" className="h-12" />
+            <h1 className="text-3xl font-bold neu-text-color">Product Management</h1>
+          </div>
           <div className="flex items-center space-x-4">
+            <a
+              href="/#"
+              className="neu-button px-5 py-2 text-sm font-medium"
+            >
+              Volver al Sitio
+            </a>
             <button
               onClick={onToggleTheme}
               className="neu-button w-12 h-12 flex items-center justify-center text-lg"
@@ -108,7 +117,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ theme, onToggleTheme })
                 placeholder="Search by name (es)..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="neu-inset px-4 py-2 w-full max-w-xs border-none focus:outline-none text-gray-700"
+                className="neu-inset px-4 py-2 w-full max-w-xs border-none focus:outline-none"
             />
           <button
             onClick={handleAddNew}

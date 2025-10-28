@@ -70,6 +70,11 @@
         border-radius: 12px;
         box-shadow: inset 5px 5px 10px var(--shadow-dark), inset -5px -5px 10px var(--shadow-light);
         transition: background-color 0.3s ease, box-shadow 0.3s ease;
+        color: var(--text-color);
+      }
+      .neu-inset::placeholder {
+        color: var(--text-color);
+        opacity: 0.6;
       }
       .neu-button {
         color: var(--text-color);
@@ -103,7 +108,8 @@
     "react/": "https://aistudiocdn.com/react@^19.2.0/",
     "react": "https://aistudiocdn.com/react@^19.2.0",
     "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
-    "@supabase/supabase-js": "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm"
+    "@supabase/supabase-js": "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm",
+    "@google/genai": "https://cdn.jsdelivr.net/npm/@google/genai/+esm"
   }
 }
 </script>
