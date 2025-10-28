@@ -3,7 +3,7 @@ import { Product } from '../../types';
 import { useProducts } from '../../context/ProductContext';
 import { useLanguage } from '../../context/LanguageContext';
 import { supabase } from '../../supabase/client';
-import { GoogleGenAI } from '@google/genai';
+import { GoogleGenAI, Type } from '@google/genai';
 
 interface ProductFormProps {
   productToEdit: Product | null;
@@ -105,46 +105,51 @@ const ProductForm: React.FC<ProductFormProps> = ({ productToEdit, onClose }) => 
     let productData: any = JSON.parse(JSON.stringify(product));
 
     try {
-      setProcessingMessage('Translating with AI...');
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-      const targetLanguages = languages.filter(l => l.code !== 'es');
-      const prompt = `Translate the following product information from Spanish into the specified languages.
-        Spanish Name: "${product.name.es}"
-        Spanish Description: "${product.description.es || '(no description)'}"
-        Target Languages: ${targetLanguages.map(l => l.name).join(', ')}
-        Provide the translations as an array of JSON objects.`;
+      if (product.name.es) {
+        setProcessingMessage('Translating with AI...');
+        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+        const targetLanguages = languages.filter(l => l.code !== 'es' && !productData.name[l.code]);
+        
+        if (targetLanguages.length > 0) {
+            const prompt = `Translate the following product information from Spanish into the specified languages.
+            Spanish Name: "${product.name.es}"
+            Spanish Description: "${product.description.es || '(no description)'}"
+            Target Languages: ${targetLanguages.map(l => l.name).join(', ')}
+            Provide the translations as a JSON array of objects, where each object has "lang", "name", and "description" keys.`;
 
-      const schema = {
-        type: 'ARRAY',
-        items: {
-          type: 'OBJECT',
-          properties: {
-            lang: { type: 'STRING', description: 'The language code (e.g., "en", "fr").' },
-            name: { type: 'STRING', description: 'The translated product name.' },
-            description: { type: 'STRING', description: 'The translated product description.' }
-          },
-          required: ['lang', 'name', 'description']
-        }
-      };
+            const schema = {
+                type: Type.ARRAY,
+                items: {
+                type: Type.OBJECT,
+                properties: {
+                    lang: { type: Type.STRING, description: 'The language code (e.g., "en", "fr").' },
+                    name: { type: Type.STRING, description: 'The translated product name.' },
+                    description: { type: Type.STRING, description: 'The translated product description.' }
+                },
+                required: ['lang', 'name', 'description']
+                }
+            };
+            
+            const response = await ai.models.generateContent({
+                model: "gemini-2.5-flash",
+                contents: prompt,
+                config: {
+                responseMimeType: "application/json",
+                responseSchema: schema,
+                },
+            });
+            
+            const translations = JSON.parse(response.text.trim());
 
-      const response = await ai.models.generateContent({
-        model: "gemini-2.5-flash",
-        contents: prompt,
-        config: {
-          responseMimeType: "application/json",
-          responseSchema: schema,
-        },
-      });
-      
-      const translations = JSON.parse(response.text.trim());
-
-      for (const translation of translations) {
-        if (productData.name[translation.lang] !== undefined) {
-          productData.name[translation.lang] = translation.name;
-          productData.description[translation.lang] = translation.description;
+            for (const translation of translations) {
+                if (productData.name[translation.lang] !== undefined) {
+                productData.name[translation.lang] = translation.name;
+                productData.description[translation.lang] = translation.description;
+                }
+            }
         }
       }
-
+      
       setProcessingMessage('Uploading Image...');
       if (imageFile) {
           const fileName = `${Date.now()}_${imageFile.name}`;
@@ -166,10 +171,6 @@ const ProductForm: React.FC<ProductFormProps> = ({ productToEdit, onClose }) => 
       
       setProcessingMessage('Saving product...');
       if (productToEdit) {
-        delete productData.id;
-        delete productData.created_at;
-        delete productData.updated_at;
-        delete productData.owner_id;
         await updateProduct({ ...productData, id: productToEdit.id });
       } else {
         await addProduct(productData);
