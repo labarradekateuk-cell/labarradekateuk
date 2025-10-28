@@ -16,6 +16,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ productToEdit, onClose }) => 
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingMessage, setProcessingMessage] = useState('Saving...');
+  const [isDragging, setIsDragging] = useState(false);
 
   const initialProductState: Omit<Product, 'id' | 'created_at' | 'owner_id' | 'updated_at'> = {
     name: Object.fromEntries(languages.map(l => [l.code, ''])),
@@ -75,12 +76,12 @@ const ProductForm: React.FC<ProductFormProps> = ({ productToEdit, onClose }) => 
       if (!window.confirm("Are you sure you want to remove this image? This will also attempt to delete it from storage.")) return;
       
       const imageUrl = product.images[index];
-      const fileName = imageUrl.split('/').pop()?.split('?')[0];
-      
-      if (fileName) {
+      const imagePath = imageUrl.substring(imageUrl.indexOf('product-images/') + 'product-images/'.length);
+
+      if (imagePath) {
           setIsProcessing(true);
           setProcessingMessage('Deleting Image...');
-          const { error } = await supabase.storage.from('product-images').remove([fileName]);
+          const { error } = await supabase.storage.from('product-images').remove([imagePath]);
           if (error) {
               console.error("Could not delete image from storage:", error.message);
               alert(`Failed to delete image from storage. You may need to do it manually. Error: ${error.message}`);
@@ -150,8 +151,8 @@ const ProductForm: React.FC<ProductFormProps> = ({ productToEdit, onClose }) => 
         }
       }
       
-      setProcessingMessage('Uploading Image...');
       if (imageFile) {
+          setProcessingMessage('Uploading Image...');
           const fileName = `${Date.now()}_${imageFile.name}`;
           const { error: uploadError } = await supabase.storage
               .from('product-images')
@@ -186,6 +187,29 @@ const ProductForm: React.FC<ProductFormProps> = ({ productToEdit, onClose }) => 
   };
   
   const inputStyles = "neu-inset w-full p-3 border-none focus:outline-none focus:ring-2 focus:ring-opacity-50 focus:ring-gray-400 sm:text-sm";
+  
+  const handleDragEvents = (e: React.DragEvent<HTMLLabelElement>) => {
+      e.preventDefault();
+      e.stopPropagation();
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLLabelElement>) => {
+      handleDragEvents(e);
+      if (!isDragging) setIsDragging(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLLabelElement>) => {
+      handleDragEvents(e);
+      setIsDragging(false);
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLLabelElement>) => {
+      handleDragEvents(e);
+      setIsDragging(false);
+      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+          setImageFile(e.dataTransfer.files[0]);
+      }
+  };
 
   return (
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
@@ -256,20 +280,42 @@ const ProductForm: React.FC<ProductFormProps> = ({ productToEdit, onClose }) => 
                     </div>
                 </div>
 
-                 <div>
-                    <label htmlFor="image-upload" className="block text-sm font-medium neu-text-color mb-1">Upload New Image</label>
-                    <div className="flex items-center gap-4">
-                        <input type="file" id="image-upload" name="image-upload" accept="image/*" onChange={handleImageFileChange} className="neu-inset w-full text-sm file:neu-button file:border-none file:mr-4 file:py-2 file:px-4 file:text-sm file:font-semibold" />
-                        {imageFile && (
-                            <div className="relative group">
-                                <img src={URL.createObjectURL(imageFile)} alt="Preview" className="w-24 h-24 object-cover rounded-md neu-outset p-1" />
-                                <button type="button" onClick={() => setImageFile(null)} className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity" aria-label="Cancel upload">
+                <div>
+                    <label className="block text-sm font-medium neu-text-color mb-1">Upload New Image</label>
+                    <label 
+                        htmlFor="image-upload" 
+                        className={`neu-inset w-full h-48 flex flex-col items-center justify-center rounded-lg cursor-pointer transition-all duration-300 ${isDragging ? 'ring-2 ring-gray-400 ring-opacity-50' : ''}`}
+                        onDragOver={handleDragOver}
+                        onDragLeave={handleDragLeave}
+                        onDrop={handleDrop}
+                    >
+                        <input type="file" id="image-upload" name="image-upload" accept="image/*" onChange={handleImageFileChange} className="hidden" />
+                        
+                        {imageFile ? (
+                            <div className="relative group w-full h-full p-2">
+                                <img src={URL.createObjectURL(imageFile)} alt="Preview" className="w-full h-full object-contain rounded-md" />
+                                <button 
+                                    type="button" 
+                                    onClick={(e) => { 
+                                        e.preventDefault();
+                                        setImageFile(null); 
+                                    }} 
+                                    className="absolute top-1 right-1 w-8 h-8 bg-red-500 text-white rounded-full flex items-center justify-center text-lg opacity-0 group-hover:opacity-100 transition-opacity" 
+                                    aria-label="Remove previewed image"
+                                >
                                     &times;
                                 </button>
                             </div>
+                        ) : (
+                            <div className="text-center neu-text-color opacity-70">
+                                <i className="fas fa-cloud-upload-alt text-4xl mb-2"></i>
+                                <p className="font-semibold">Click to upload or drag & drop</p>
+                                <p className="text-xs">PNG, JPG, WEBP</p>
+                            </div>
                         )}
-                    </div>
-                 </div>
+                    </label>
+                </div>
+
 
                 <div>
                     <label htmlFor="tags" className="block text-sm font-medium neu-text-color mb-1">Tags (comma-separated, e.g., starter, beef)</label>
