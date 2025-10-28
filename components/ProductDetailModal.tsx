@@ -1,5 +1,6 @@
 
 
+
 import React, { useState } from 'react';
 import { Product } from '../types';
 import { useLanguage } from '../context/LanguageContext';
@@ -51,7 +52,7 @@ const ProductDetailModal: React.FC<ProductDetailModalProps> = ({ product, onClos
   return (
     <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={onClose}>
       <div 
-        className="relative w-full max-w-4xl max-h-[90vh] bg-white/20 backdrop-blur-2xl border border-white/40 rounded-3xl shadow-2xl flex flex-col md:flex-row overflow-hidden" 
+        className="relative w-full max-w-4xl max-h-[90vh] bg-gradient-to-br from-white/50 to-white/30 backdrop-blur-2xl border border-white/50 rounded-3xl shadow-2xl flex flex-col md:flex-row overflow-hidden" 
         onClick={(e) => e.stopPropagation()}
       >
         <button onClick={onClose} className="absolute top-4 right-4 text-gray-700 hover:text-black text-3xl z-20 w-10 h-10 bg-white/30 rounded-full flex items-center justify-center">

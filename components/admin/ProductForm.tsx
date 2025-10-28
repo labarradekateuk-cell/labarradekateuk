@@ -13,7 +13,6 @@ interface ProductFormProps {
 const ProductForm: React.FC<ProductFormProps> = ({ productToEdit, onClose }) => {
   const { addProduct, updateProduct } = useProducts();
   const { languages } = useLanguage();
-  // FIX: Explicitly type the state to allow any language code, not just the inferred initial one.
   const [activeTab, setActiveTab] = useState<Language>(languages[0].code);
   
   const initialProductState = {
@@ -22,15 +21,23 @@ const ProductForm: React.FC<ProductFormProps> = ({ productToEdit, onClose }) => 
     price: 0,
     images: [],
     isVisible: true,
+    tags: []
   };
 
   const [product, setProduct] = useState<Omit<Product, 'id'>>(initialProductState);
 
   useEffect(() => {
     if (productToEdit) {
+      // Ensure all language keys exist to prevent uncontrolled component warnings
+      const completeName = { ...initialProductState.name, ...productToEdit.name };
+      const completeDescription = { ...initialProductState.description, ...productToEdit.description };
+      
       setProduct({
         ...productToEdit,
-        images: [...productToEdit.images]
+        name: completeName,
+        description: completeDescription,
+        images: [...productToEdit.images],
+        tags: productToEdit.tags ? [...productToEdit.tags] : []
       });
     } else {
       setProduct(initialProductState);
@@ -57,6 +64,11 @@ const ProductForm: React.FC<ProductFormProps> = ({ productToEdit, onClose }) => 
       const { value } = e.target;
       setProduct(prev => ({ ...prev, images: value.split(',').map(img => img.trim()).filter(Boolean) }));
   }
+  
+  const handleTagsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const { value } = e.target;
+      setProduct(prev => ({...prev, tags: value.split(',').map(tag => tag.trim().toLowerCase()).filter(Boolean) }));
+  }
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -73,7 +85,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ productToEdit, onClose }) => 
       <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
         <div className="flex justify-between items-center p-4 border-b">
             <h2 className="text-xl font-semibold">{productToEdit ? 'Edit Product' : 'Add New Product'}</h2>
-            <button onClick={onClose} className="text-gray-500 hover:text-gray-800">&times;</button>
+            <button onClick={onClose} className="text-gray-500 hover:text-gray-800 text-2xl font-bold">&times;</button>
         </div>
 
         <form onSubmit={handleSubmit} className="overflow-y-auto">
@@ -166,7 +178,17 @@ const ProductForm: React.FC<ProductFormProps> = ({ productToEdit, onClose }) => 
                         id="images"
                         value={product.images.join(', ')}
                         onChange={handleImageChange}
-                        required
+                        className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                    />
+                </div>
+                <div>
+                    <label htmlFor="tags" className="block text-sm font-medium text-gray-700">Tags (comma-separated)</label>
+                    <input
+                        type="text"
+                        name="tags"
+                        id="tags"
+                        value={product.tags?.join(', ')}
+                        onChange={handleTagsChange}
                         className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
                     />
                 </div>
